@@ -28,11 +28,17 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const authStatus = localStorage.getItem('isAuthenticated') === 'true';
     setIsAuthenticated(authStatus);
   }, []);
+
+  if (!isMounted) {
+    return null; // Or a loading spinner that doesn't mismatch
+  }
 
   const formik = useFormik({
     initialValues: {
