@@ -36,10 +36,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     setIsAuthenticated(authStatus);
   }, []);
 
-  if (!isMounted) {
-    return null; // Or a loading spinner that doesn't mismatch
-  }
-
   const formik = useFormik({
     initialValues: {
       email: '',
@@ -64,6 +60,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       }, 600);
     },
   });
+
+  if (!isMounted) {
+    return null;
+  }
 
   if (isAuthenticated === null) {
     return (
