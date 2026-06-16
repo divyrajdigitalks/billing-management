@@ -9,6 +9,9 @@ export interface PartyData {
   remark?: string;
   createdAt?: string;
   updatedAt?: string;
+  totalBillAmount?: number;
+  totalPaidAmount?: number;
+  totalDueAmount?: number;
 }
 
 export interface GetPartiesResponse {

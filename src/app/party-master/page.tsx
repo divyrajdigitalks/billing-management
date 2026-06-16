@@ -208,6 +208,36 @@ export default function PartyMaster() {
         </Box>
       ),
     },
+    {
+      id: 'totalBillAmount',
+      label: 'Total Out',
+      minWidth: 120,
+      align: 'right' as const,
+      format: (value: number) => formatCurrency(value || 0),
+    },
+    {
+      id: 'totalPaidAmount',
+      label: 'Total In',
+      minWidth: 120,
+      align: 'right' as const,
+      format: (value: number) => formatCurrency(value || 0),
+    },
+    {
+      id: 'totalDueAmount',
+      label: 'Pending',
+      minWidth: 120,
+      align: 'right' as const,
+      format: (value: number) => (
+        <Typography
+          sx={{
+            fontWeight: 600,
+            color: (value || 0) > 0 ? '#d93025' : '#137333',
+          }}
+        >
+          {formatCurrency(value || 0)}
+        </Typography>
+      ),
+    },
     { id: 'remark', label: 'Remark', minWidth: 120 },
     {
       id: 'actions',
