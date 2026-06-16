@@ -14,7 +14,11 @@ export const ThemeInput: React.FC<ThemeInputProps> = ({ name, formik, ...props }
     let value = e.target.value;
     
     // If it's a mobile number field (detect by name or label)
-    if (name.toLowerCase().includes('mobile') || (props.label && props.label.toLowerCase().includes('mobile'))) {
+    const isMobileField = 
+      String(name).toLowerCase().includes('mobile') || 
+      (props.label && String(props.label).toLowerCase().includes('mobile'));
+    
+    if (isMobileField) {
       // Only allow digits and limit to 10
       value = value.replace(/\D/g, '').slice(0, 10);
     }
