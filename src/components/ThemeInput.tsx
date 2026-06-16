@@ -40,13 +40,11 @@ export const ThemeInput: React.FC<ThemeInputProps> = ({ name, formik, ...props }
       String(name).toLowerCase().includes('mobile') || 
       (props.label && String(props.label).toLowerCase().includes('mobile'));
     
-    if (isMobileField && formik.values[name]) {
+    if (isMobileField) {
       let currentValue = formik.values[name];
-      if (!currentValue.startsWith('+91')) {
-        const digitsOnly = currentValue.replace(/\D/g, '').slice(0, 10);
-        if (digitsOnly) {
-          formik.setFieldValue(name, '+91' + digitsOnly);
-        }
+      if (!currentValue || !currentValue.startsWith('+91')) {
+        const digitsOnly = (currentValue || '').replace(/\D/g, '').slice(0, 10);
+        formik.setFieldValue(name, '+91' + digitsOnly);
       }
     }
   }, []);

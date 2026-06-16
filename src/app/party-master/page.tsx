@@ -42,7 +42,7 @@ const validationSchema = Yup.object().shape({
   partyName: Yup.string().required('Party name is required'),
   mobileNo: Yup.string()
     .required('Mobile number is required')
-    .matches(/^[6-9]\d{9}$/, 'Invalid Indian mobile number (10 digits starting with 6-9)'),
+    .matches(/^\+91[6-9]\d{9}$/, 'Mobile number must be 10 digits starting with 6-9, prefixed with +91'),
   address: Yup.string(),
   remark: Yup.string(),
 });
