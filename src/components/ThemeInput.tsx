@@ -19,12 +19,37 @@ export const ThemeInput: React.FC<ThemeInputProps> = ({ name, formik, ...props }
       (props.label && String(props.label).toLowerCase().includes('mobile'));
     
     if (isMobileField) {
-      // Only allow digits and limit to 10
-      value = value.replace(/\D/g, '').slice(0, 10);
+      // Handle +91 prefix
+      if (!value.startsWith('+91')) {
+        // If user is typing, keep only digits first
+        const digitsOnly = value.replace(/\D/g, '');
+        value = '+91' + digitsOnly.slice(0, 10);
+      } else {
+        // If +91 is already there, just keep digits after that
+        const digitsOnly = value.slice(3).replace(/\D/g, '').slice(0, 10);
+        value = '+91' + digitsOnly;
+      }
     }
 
     formik.setFieldValue(name, value);
   };
+
+  // Handle initial value to add +91 prefix if needed
+  React.useEffect(() => {
+    const isMobileField = 
+      String(name).toLowerCase().includes('mobile') || 
+      (props.label && String(props.label).toLowerCase().includes('mobile'));
+    
+    if (isMobileField && formik.values[name]) {
+      let currentValue = formik.values[name];
+      if (!currentValue.startsWith('+91')) {
+        const digitsOnly = currentValue.replace(/\D/g, '').slice(0, 10);
+        if (digitsOnly) {
+          formik.setFieldValue(name, '+91' + digitsOnly);
+        }
+      }
+    }
+  }, []);
 
   return (
     <TextField

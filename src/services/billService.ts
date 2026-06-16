@@ -15,6 +15,15 @@ export interface BillData {
   updatedAt?: string;
 }
 
+export interface CreateBillData {
+  partyId: string;
+  vehicleNumber: string;
+  billDate: string | Date;
+  billAmount: number;
+  receiveAmount?: number;
+  remark?: string;
+}
+
 export interface GetBillsResponse {
   bills: BillData[];
   total: number;
@@ -32,7 +41,7 @@ export const getBillById = async (id: string) => {
   return response.data;
 };
 
-export const createBill = async (data: Omit<BillData, '_id' | 'billNo'>) => {
+export const createBill = async (data: CreateBillData) => {
   const response = await API.post<BillData>('/bill', data);
   return response.data;
 };

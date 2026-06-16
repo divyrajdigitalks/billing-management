@@ -32,7 +32,7 @@ export const fetchBills = createAsyncThunk(
 
 export const createBill = createAsyncThunk(
   'bill/createBill',
-  async (data: Omit<billService.BillData, '_id' | 'billNo'>, { rejectWithValue }) => {
+  async (data: billService.CreateBillData, { rejectWithValue }) => {
     try {
       return await billService.createBill(data);
     } catch (error: any) {

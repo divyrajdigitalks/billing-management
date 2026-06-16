@@ -58,6 +58,11 @@ const validationSchema = Yup.object().shape({
   billAmount: Yup.number()
     .required('Bill amount is required')
     .min(0, 'Bill amount must be positive'),
+  receiveAmount: Yup.number()
+    .min(0, 'Receive amount cannot be negative')
+    .test('max-pending', 'Receive amount cannot exceed bill amount', function(value) {
+      return Number(value || 0) <= Number(this.parent.billAmount || 0);
+    }),
   remark: Yup.string(),
 });
 
@@ -70,6 +75,10 @@ export default function BillEntry() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Quick add party vehicle state
+  const [quickVehicleInput, setQuickVehicleInput] = useState('');
+  const [quickVehiclesList, setQuickVehiclesList] = useState<string[]>([]);
 
   // Dialog states
   const [formOpen, setFormOpen] = useState(false);
@@ -106,12 +115,18 @@ export default function BillEntry() {
     setCurrentPage(0);
   };
 
+  // Calculate pending amount
+  const calculatePendingAmount = (billAmount: number, receiveAmount: number) => {
+    return Math.max(0, (billAmount || 0) - (receiveAmount || 0));
+  };
+
   const formik = useFormik({
     initialValues: {
       partyId: '',
       vehicleNumber: '',
       billDate: new Date().toISOString().split('T')[0],
       billAmount: 0,
+      receiveAmount: 0,
       remark: '',
     },
     validationSchema,
@@ -151,11 +166,14 @@ export default function BillEntry() {
     }),
     onSubmit: async (values) => {
       try {
-        const newParty = await dispatch(createParty({ ...values, vehicleNumbers: [] })).unwrap();
+        const newParty = await dispatch(createParty({ ...values, vehicleNumbers: quickVehiclesList })).unwrap();
         showToast('Party created successfully!', 'success');
         await dispatch(fetchParties({ limit: 1000 }));
         // Select newly created party
         handlePartyChange(newParty._id || '');
+        // Reset quick add party state
+        setQuickVehicleInput('');
+        setQuickVehiclesList([]);
         setQuickAddPartyOpen(false);
         quickPartyFormik.resetForm();
       } catch (err: any) {
@@ -190,6 +208,18 @@ export default function BillEntry() {
     dispatch(clearHistory());
   };
 
+  // Quick add party vehicle handlers
+  const handleAddQuickVehicle = () => {
+    if (quickVehicleInput.trim() && !quickVehiclesList.includes(quickVehicleInput.trim())) {
+      setQuickVehiclesList([...quickVehiclesList, quickVehicleInput.trim()]);
+      setQuickVehicleInput('');
+    }
+  };
+
+  const handleRemoveQuickVehicle = (index: number) => {
+    setQuickVehiclesList(quickVehiclesList.filter((_, i) => i !== index));
+  };
+
   const handleOpenAddForm = () => {
     setSelectedBill(null);
     setAvailableVehicles([]);
@@ -214,6 +244,7 @@ export default function BillEntry() {
       vehicleNumber: bill.vehicleNumber || '',
       billDate: bill.billDate ? new Date(bill.billDate).toISOString().split('T')[0] : '',
       billAmount: bill.billAmount || 0,
+      receiveAmount: 0,
       remark: bill.remark || '',
     });
     setFormOpen(true);
@@ -539,6 +570,21 @@ export default function BillEntry() {
             <ThemeInput name="billAmount" label="Bill Amount *" type="number" formik={formik} />
           </Box>
 
+          <Box>
+            <ThemeInput name="receiveAmount" label="Receive Amount" type="number" formik={formik} />
+          </Box>
+
+          <Box>
+            <TextField
+              fullWidth
+              size="small"
+              label="Pending Amount"
+              value={calculatePendingAmount(formik.values.billAmount, formik.values.receiveAmount)}
+              disabled
+              variant="filled"
+            />
+          </Box>
+
           <Box sx={{ gridColumn: 'span 2' }}>
             <ThemeInput name="remark" label="Remark" multiline rows={2} formik={formik} />
           </Box>
@@ -632,11 +678,19 @@ export default function BillEntry() {
       {/* Quick Add Party Dialog */}
       <ThemeDialog
         open={quickAddPartyOpen}
-        onClose={() => setQuickAddPartyOpen(false)}
+        onClose={() => {
+          setQuickVehicleInput('');
+          setQuickVehiclesList([]);
+          setQuickAddPartyOpen(false);
+        }}
         title="Quick Add Party"
         actions={
           <DialogActions>
-            <Button onClick={() => setQuickAddPartyOpen(false)} color="inherit">
+            <Button onClick={() => {
+              setQuickVehicleInput('');
+              setQuickVehiclesList([]);
+              setQuickAddPartyOpen(false);
+            }} color="inherit">
               Cancel
             </Button>
             <Button onClick={() => quickPartyFormik.handleSubmit()} variant="contained" color="primary">
@@ -645,7 +699,7 @@ export default function BillEntry() {
           </DialogActions>
         }
       >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
           <Box>
             <ThemeInput name="partyName" label="Party Name *" formik={quickPartyFormik} />
           </Box>
@@ -655,6 +709,44 @@ export default function BillEntry() {
           <Box sx={{ gridColumn: 'span 2' }}>
             <ThemeInput name="address" label="Address" multiline rows={2} formik={quickPartyFormik} />
           </Box>
+          
+          {/* Vehicles Management */}
+          <Box sx={{ gridColumn: 'span 2' }}>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1, fontWeight: 600 }}>
+              Vehicle Numbers
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+              <TextField
+                size="small"
+                label="Add Vehicle Number (e.g. GJ01AB1234)"
+                value={quickVehicleInput}
+                onChange={(e) => setQuickVehicleInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddQuickVehicle())}
+                sx={{ flexGrow: 1 }}
+              />
+              <Button variant="outlined" onClick={handleAddQuickVehicle} startIcon={<AddIcon />}>
+                Add
+              </Button>
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {quickVehiclesList.length === 0 ? (
+                <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+                  No vehicle numbers added.
+                </Typography>
+              ) : (
+                quickVehiclesList.map((veh, idx) => (
+                  <Chip
+                    key={idx}
+                    label={veh}
+                    onDelete={() => handleRemoveQuickVehicle(idx)}
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))
+              )}
+            </Box>
+          </Box>
+
           <Box sx={{ gridColumn: 'span 2' }}>
             <ThemeInput name="remark" label="Remark" multiline rows={2} formik={quickPartyFormik} />
           </Box>
