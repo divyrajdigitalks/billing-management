@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Typography,
@@ -36,6 +36,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import HistoryIcon from '@mui/icons-material/History';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 
 import { RootState, AppDispatch } from '../../redux/store';
 import { fetchBills, createBill, updateBill, deleteBill } from '../../redux/billSlice';
@@ -51,6 +53,7 @@ import { Loader } from '../../components/Loader';
 import { showToast } from '../../components/LayoutShell';
 import { BillData } from '../../services/billService';
 import { PartyData } from '../../services/partyService';
+import { API_BASE_URL } from '../../services/api';
 
 const validationSchema = Yup.object().shape({
   partyId: Yup.string().required('Party selection is required'),
@@ -69,13 +72,23 @@ const validationSchema = Yup.object().shape({
 
 export default function BillEntry() {
   const dispatch = useDispatch<AppDispatch>();
-  const { bills, total, page, loading, error } = useSelector((state: RootState) => state.bill);
+  const { bills, total, loading, error } = useSelector((state: RootState) => state.bill);
   const { parties } = useSelector((state: RootState) => state.party);
   const { historyData, loading: historyLoading } = useSelector((state: RootState) => state.history);
 
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  // Temp filter states
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
+  const [tempStatus, setTempStatus] = useState('');
+  // Applied filter states
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [status, setStatus] = useState('');
+  // File input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Quick add party vehicle state
   const [quickVehicleInput, setQuickVehicleInput] = useState('');
@@ -101,19 +114,56 @@ export default function BillEntry() {
 
   useEffect(() => {
     loadBills();
-  }, [currentPage, rowsPerPage, search, dispatch]);
+  }, [currentPage, rowsPerPage, search, startDate, endDate, status, dispatch]);
 
   const loadBills = () => {
     dispatch(fetchBills({
       search,
       page: currentPage + 1,
       limit: rowsPerPage,
+      startDate,
+      endDate,
+      status,
     }));
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSearch(e.target.value);
     setCurrentPage(0);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/bill/import/csv`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Import failed');
+      }
+
+      const data = await response.json();
+      showToast(data.message, 'success');
+      loadBills();
+    } catch (err: any) {
+      showToast(err.message || 'Import failed', 'error');
+    }
+
+    // Clear the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Calculate pending amount
@@ -154,7 +204,6 @@ export default function BillEntry() {
     initialValues: {
       partyName: '',
       mobileNo: '',
-      address: '',
       remark: '',
     },
     validationSchema: Yup.object({
@@ -162,7 +211,6 @@ export default function BillEntry() {
       mobileNo: Yup.string()
         .required('Mobile number is required')
         .matches(/^\+91[6-9]\d{9}$/, 'Mobile number must be 10 digits starting with 6-9, prefixed with +91'),
-      address: Yup.string(),
       remark: Yup.string(),
     }),
     onSubmit: async (values) => {
@@ -376,6 +424,22 @@ export default function BillEntry() {
       format: (val: number) => formatCurrency(val)
     },
     {
+      id: 'status',
+      label: 'Status',
+      minWidth: 100,
+      format: (_: any, row: BillData) => {
+        const isDone = (row.pendingAmount || 0) <= 0;
+        return (
+          <Chip
+            label={isDone ? 'Done' : 'Pending'}
+            color={isDone ? 'success' : 'warning'}
+            size="small"
+            sx={{ fontWeight: 600 }}
+          />
+        );
+      }
+    },
+    {
       id: 'actions',
       label: 'Actions',
       minWidth: 180,
@@ -421,21 +485,42 @@ export default function BillEntry() {
             Manage your billing invoices, track collections, and view pending status
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddForm}>
-          New Bill
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef} 
+            style={{ display: 'none' }} 
+            onChange={handleFileChange}
+          />
+          <Button variant="outlined" startIcon={<UploadIcon />} onClick={handleImportClick}>
+            Import
+          </Button>
+          <Button 
+            variant="outlined" 
+            startIcon={<DownloadIcon />} 
+            onClick={() => {
+              window.open(`${API_BASE_URL}/bill/export/csv`, '_blank');
+            }}
+          >
+            Export
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddForm}>
+            New Bill
+          </Button>
+        </Box>
       </Box>
 
       {/* Filter and Search */}
-      <Paper sx={{ p: 2, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+      <Paper sx={{ p: 2.5, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', gap: 3.5, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
             size="small"
             variant="outlined"
             placeholder="Search by Bill No, Vehicle No, or Remark..."
             value={search}
             onChange={handleSearchChange}
-            sx={{ width: { xs: '100%', sm: 320 } }}
+            sx={{ width: { xs: '100%', sm: 260 } }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -446,6 +531,89 @@ export default function BillEntry() {
               }
             }}
           />
+          
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Date range filters */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              type="date"
+              label="From Date"
+              value={tempStartDate}
+              onChange={(e) => setTempStartDate(e.target.value)}
+              slotProps={{
+                inputLabel: { shrink: true }
+              }}
+              sx={{ width: 160 }}
+            />
+            <Typography variant="body2" color="textSecondary">to</Typography>
+            <TextField
+              size="small"
+              type="date"
+              label="To Date"
+              value={tempEndDate}
+              onChange={(e) => setTempEndDate(e.target.value)}
+              slotProps={{
+                inputLabel: { shrink: true }
+              }}
+              sx={{ width: 160 }}
+            />
+          </Box>
+
+          {/* Status filter dropdown */}
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel id="status-filter-label">Status</InputLabel>
+            <Select
+              labelId="status-filter-label"
+              id="status-filter"
+              value={tempStatus}
+              label="Status"
+              onChange={(e) => setTempStatus(e.target.value)}
+            >
+              <MenuItem value="">
+                <em>All Statuses</em>
+              </MenuItem>
+              <MenuItem value="done">Done</MenuItem>
+              <MenuItem value="pending">Pending</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Apply Filter Button */}
+          <Button
+            variant="contained"
+            color="primary"
+            size="medium"
+            onClick={() => {
+              setStartDate(tempStartDate);
+              setEndDate(tempEndDate);
+              setStatus(tempStatus);
+              setCurrentPage(0);
+            }}
+            sx={{ height: 40, textTransform: 'none', px: 3, fontWeight: 600 }}
+          >
+            Apply Filter
+          </Button>
+
+          {/* Reset button */}
+          {(tempStartDate || tempEndDate || tempStatus || startDate || endDate || status) && (
+            <Button
+              size="small"
+              onClick={() => {
+                setTempStartDate('');
+                setTempEndDate('');
+                setTempStatus('');
+                setStartDate('');
+                setEndDate('');
+                setStatus('');
+                setCurrentPage(0);
+              }}
+              sx={{ textTransform: 'none', fontWeight: 500 }}
+              color="inherit"
+            >
+              Clear
+            </Button>
+          )}
         </Box>
       </Paper>
 
@@ -703,9 +871,7 @@ export default function BillEntry() {
           <Box>
             <ThemeInput name="mobileNo" label="Mobile Number * (10 digits)" formik={quickPartyFormik} />
           </Box>
-          <Box sx={{ gridColumn: 'span 2' }}>
-            <ThemeInput name="address" label="Address" multiline rows={2} formik={quickPartyFormik} />
-          </Box>
+          {/* Address removed from quick add per request */}
           
           {/* Vehicles Management */}
           <Box sx={{ gridColumn: 'span 2' }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Typography, Box, Paper, CircularProgress, Alert, useMediaQuery, useTheme } from '@mui/material';
 import { fetchDashboardSummary } from '../redux/dashboardSlice';
@@ -29,10 +29,15 @@ export default function Dashboard() {
   const { summary, loading, error } = useSelector((state: RootState) => state.dashboard);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [chartsReady, setChartsReady] = useState(false);
 
   useEffect(() => {
     dispatch(fetchDashboardSummary());
   }, [dispatch]);
+
+  useEffect(() => {
+    setChartsReady(true);
+  }, []);
 
   if (loading && !summary) {
     return (
@@ -138,8 +143,9 @@ export default function Dashboard() {
                   <Typography color="textSecondary">No data available</Typography>
                 </Box>
               ) : (
-                <Box sx={{ width: '100%', height: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <Box sx={{ width: '100%', height: 300, minWidth: 0 }}>
+                  {chartsReady && (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <AreaChart data={data.monthlyChartData}>
                       <defs>
                         <linearGradient id="colorBilling" x1="0" y1="0" x2="0" y2="1">
@@ -155,6 +161,7 @@ export default function Dashboard() {
                       <Area type="monotone" dataKey="billing" name="Billed Amount" stroke="#1a73e8" fillOpacity={1} fill="url(#colorBilling)" />
                     </AreaChart>
                   </ResponsiveContainer>
+                  )}
                 </Box>
               )}
             </Paper>
@@ -171,8 +178,9 @@ export default function Dashboard() {
                   <Typography color="textSecondary">No data available</Typography>
                 </Box>
               ) : (
-                <Box sx={{ width: '100%', height: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <Box sx={{ width: '100%', height: 300, minWidth: 0 }}>
+                  {chartsReady && (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart data={data.monthlyChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
@@ -182,6 +190,7 @@ export default function Dashboard() {
                       <Bar dataKey="collection" name="Received Amount" fill="#188038" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                  )}
                 </Box>
               )}
             </Paper>

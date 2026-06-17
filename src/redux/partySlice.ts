@@ -21,7 +21,7 @@ const initialState: PartyState = {
 
 export const fetchParties = createAsyncThunk(
   'party/fetchParties',
-  async (params: { search?: string; page?: number; limit?: number; sortBy?: string; order?: string } | undefined, { rejectWithValue }) => {
+  async (params: { search?: string; page?: number; limit?: number; sortBy?: string; order?: string; status?: string } | undefined, { rejectWithValue }) => {
     try {
       return await partyService.getParties(params);
     } catch (error: any) {

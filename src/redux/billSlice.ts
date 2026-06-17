@@ -21,7 +21,7 @@ const initialState: BillState = {
 
 export const fetchBills = createAsyncThunk(
   'bill/fetchBills',
-  async (params: { search?: string; page?: number; limit?: number } | undefined, { rejectWithValue }) => {
+  async (params: { search?: string; page?: number; limit?: number; startDate?: string; endDate?: string; status?: string } | undefined, { rejectWithValue }) => {
     try {
       return await billService.getBills(params);
     } catch (error: any) {

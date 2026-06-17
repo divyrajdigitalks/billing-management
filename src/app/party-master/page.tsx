@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Typography,
@@ -17,6 +17,10 @@ import {
   List,
   ListItem,
   ListItemText,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -26,6 +30,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import HistoryIcon from '@mui/icons-material/History';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 
 import { RootState, AppDispatch } from '../../redux/store';
 import { fetchParties, createParty, updateParty, deleteParty } from '../../redux/partySlice';
@@ -37,6 +43,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Loader } from '../../components/Loader';
 import { showToast } from '../../components/LayoutShell';
 import { PartyData } from '../../services/partyService';
+import { API_BASE_URL } from '../../services/api';
 
 const validationSchema = Yup.object().shape({
   partyName: Yup.string().required('Party name is required'),
@@ -55,6 +62,11 @@ export default function PartyMaster() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  // Temp filter states
+  // Applied filter states
+  const [status, setStatus] = useState('');
+  // File input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Dialog/Drawer states
   const [formOpen, setFormOpen] = useState(false);
@@ -67,7 +79,7 @@ export default function PartyMaster() {
 
   useEffect(() => {
     loadParties();
-  }, [currentPage, rowsPerPage, search]);
+  }, [currentPage, rowsPerPage, search, status]);
 
   const loadParties = () => {
     dispatch(fetchParties({
@@ -75,13 +87,54 @@ export default function PartyMaster() {
       page: currentPage + 1,
       limit: rowsPerPage,
       sortBy: 'partyName',
-      order: 'asc'
+      order: 'asc',
+      status
     }));
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSearch(e.target.value);
     setCurrentPage(0);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Ask for confirmation before importing
+    const confirm = window.confirm('Are you sure you want to import this file? This will add parties. Continue?');
+    if (!confirm) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/party/import/csv`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Import failed');
+      }
+
+      const data = await response.json();
+      showToast(data.message, 'success');
+      loadParties();
+    } catch (err: any) {
+      showToast(err.message || 'Import failed', 'error');
+    }
+
+    // Clear the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleAddVehicle = () => {
@@ -257,21 +310,42 @@ export default function PartyMaster() {
             Manage your customer database and track transaction history
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddForm}>
-          Add Party
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef} 
+            style={{ display: 'none' }} 
+            onChange={handleFileChange}
+          />
+          <Button variant="outlined" startIcon={<UploadIcon />} onClick={handleImportClick}>
+            Import
+          </Button>
+          <Button 
+            variant="outlined" 
+            startIcon={<DownloadIcon />} 
+            onClick={() => {
+              window.open(`${API_BASE_URL}/party/export/xlsx`, '_blank');
+            }}
+          >
+            Export
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddForm}>
+            Add Party
+          </Button>
+        </Box>
       </Box>
 
       {/* Filter and Search */}
-      <Paper sx={{ p: 2, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+      <Paper sx={{ p: 2.5, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', gap: 3.5, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
             size="small"
             variant="outlined"
             placeholder="Search by name, mobile or address..."
             value={search}
             onChange={handleSearchChange}
-            sx={{ width: { xs: '100%', sm: 320 } }}
+            sx={{ width: { xs: '100%', sm: 260 } }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -282,6 +356,28 @@ export default function PartyMaster() {
               }
             }}
           />
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Status filter dropdown */}
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel id="party-status-filter-label">Status</InputLabel>
+            <Select
+              labelId="party-status-filter-label"
+              id="party-status-filter"
+              value={status}
+              label="Status"
+              onChange={(e) => { setStatus(e.target.value); setCurrentPage(0); }}
+            >
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              <MenuItem value="done">Done</MenuItem>
+              <MenuItem value="pending">Pending</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Dropdown auto-applies filter; Clear handled via selecting "All" */}
         </Box>
       </Paper>
 

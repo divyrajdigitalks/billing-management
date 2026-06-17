@@ -21,7 +21,7 @@ export interface GetPartiesResponse {
   pages: number;
 }
 
-export const getParties = async (params?: { search?: string; page?: number; limit?: number; sortBy?: string; order?: string }) => {
+export const getParties = async (params?: { search?: string; page?: number; limit?: number; sortBy?: string; order?: string; status?: string }) => {
   const response = await API.get<GetPartiesResponse>('/party', { params });
   return response.data;
 };

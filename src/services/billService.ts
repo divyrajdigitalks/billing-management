@@ -31,7 +31,7 @@ export interface GetBillsResponse {
   pages: number;
 }
 
-export const getBills = async (params?: { search?: string; page?: number; limit?: number }) => {
+export const getBills = async (params?: { search?: string; page?: number; limit?: number; startDate?: string; endDate?: string; status?: string }) => {
   const response = await API.get<GetBillsResponse>('/bill', { params });
   return response.data;
 };
