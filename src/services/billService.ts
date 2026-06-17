@@ -22,6 +22,7 @@ export interface CreateBillData {
   billAmount: number;
   receiveAmount?: number;
   remark?: string;
+  billNo?: string;
 }
 
 export interface GetBillsResponse {

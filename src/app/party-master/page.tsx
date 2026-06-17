@@ -50,7 +50,6 @@ const validationSchema = Yup.object().shape({
   mobileNo: Yup.string()
     .required('Mobile number is required')
     .matches(/^\+91[6-9]\d{9}$/, 'Mobile number must be 10 digits starting with 6-9, prefixed with +91'),
-  address: Yup.string(),
   remark: Yup.string(),
 });
 
@@ -155,7 +154,6 @@ export default function PartyMaster() {
     initialValues: {
       partyName: '',
       mobileNo: '',
-      address: '',
       remark: '',
     },
     validationSchema,
@@ -196,7 +194,6 @@ export default function PartyMaster() {
     formik.setValues({
       partyName: party.partyName,
       mobileNo: party.mobileNo,
-      address: party.address || '',
       remark: party.remark || '',
     });
     setFormOpen(true);
@@ -248,7 +245,6 @@ export default function PartyMaster() {
   const columns = [
     { id: 'partyName', label: 'Party Name', minWidth: 150 },
     { id: 'mobileNo', label: 'Mobile Number', minWidth: 120 },
-    { id: 'address', label: 'Address', minWidth: 180 },
     {
       id: 'vehicleNumbers',
       label: 'Vehicle Numbers',
@@ -311,25 +307,6 @@ export default function PartyMaster() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <input 
-            type="file" 
-            accept=".csv" 
-            ref={fileInputRef} 
-            style={{ display: 'none' }} 
-            onChange={handleFileChange}
-          />
-          <Button variant="outlined" startIcon={<UploadIcon />} onClick={handleImportClick}>
-            Import
-          </Button>
-          <Button 
-            variant="outlined" 
-            startIcon={<DownloadIcon />} 
-            onClick={() => {
-              window.open(`${API_BASE_URL}/party/export/xlsx`, '_blank');
-            }}
-          >
-            Export
-          </Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddForm}>
             Add Party
           </Button>
@@ -342,7 +319,7 @@ export default function PartyMaster() {
           <TextField
             size="small"
             variant="outlined"
-            placeholder="Search by name, mobile or address..."
+            placeholder="Search by name or mobile..."
             value={search}
             onChange={handleSearchChange}
             sx={{ width: { xs: '100%', sm: 260 } }}
@@ -419,9 +396,7 @@ export default function PartyMaster() {
           <Box>
             <ThemeInput name="mobileNo" label="Mobile Number *" formik={formik} />
           </Box>
-          <Box sx={{ gridColumn: 'span 2' }}>
-            <ThemeInput name="address" label="Address" multiline rows={2} formik={formik} />
-          </Box>
+          {/* Address removed from Party Master form per request */}
           
           {/* Vehicles Management */}
           <Box sx={{ gridColumn: 'span 2' }}>
@@ -508,10 +483,7 @@ export default function PartyMaster() {
                   <Typography variant="caption" color="textSecondary">Mobile:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>{historyData.partyInfo.mobileNo}</Typography>
                 </Box>
-                <Box sx={{ gridColumn: 'span 3' }}>
-                  <Typography variant="caption" color="textSecondary">Address:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{historyData.partyInfo.address || '-'}</Typography>
-                </Box>
+                {/* Address removed from history summary */}
                 <Box sx={{ gridColumn: 'span 2', mt: 1 }}>
                   <Typography variant="caption" color="textSecondary">Total Billed:</Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600, color: '#137333' }}>

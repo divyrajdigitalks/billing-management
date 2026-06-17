@@ -56,6 +56,7 @@ import { PartyData } from '../../services/partyService';
 import { API_BASE_URL } from '../../services/api';
 
 const validationSchema = Yup.object().shape({
+  billNo: Yup.string().trim(),
   partyId: Yup.string().required('Party selection is required'),
   vehicleNumber: Yup.string().required('Vehicle number selection is required'),
   billDate: Yup.date().required('Bill date is required'),
@@ -87,7 +88,7 @@ export default function BillEntry() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
-  // File input ref
+  // File input refs
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Quick add party vehicle state
@@ -173,6 +174,7 @@ export default function BillEntry() {
 
   const formik = useFormik({
     initialValues: {
+      billNo: '',
       partyId: '',
       vehicleNumber: '',
       billDate: new Date().toISOString().split('T')[0],
@@ -274,6 +276,7 @@ export default function BillEntry() {
     setAvailableVehicles([]);
     setPartyMobile('');
     formik.resetForm();
+    formik.setFieldValue('billNo', '');
     formik.setFieldValue('billDate', new Date().toISOString().split('T')[0]);
     setFormOpen(true);
   };
@@ -289,6 +292,7 @@ export default function BillEntry() {
     }
 
     formik.setValues({
+      billNo: bill.billNo || '',
       partyId: pId || '',
       vehicleNumber: bill.vehicleNumber || '',
       billDate: bill.billDate ? new Date(bill.billDate).toISOString().split('T')[0] : '',
@@ -506,7 +510,7 @@ export default function BillEntry() {
             Export
           </Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAddForm}>
-            New Bill
+          New Bill
           </Button>
         </Box>
       </Box>
@@ -693,6 +697,10 @@ export default function BillEntry() {
               disabled
               variant="filled"
             />
+          </Box>
+
+          <Box>
+            <ThemeInput name="billNo" label="Bill No" formik={formik} disabled={Boolean(selectedBill)} />
           </Box>
 
           {/* Vehicle Number Dropdown */}
