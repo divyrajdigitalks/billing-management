@@ -22,6 +22,7 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  Autocomplete,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -383,36 +384,34 @@ export default function PaymentIn() {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
           {/* Party Selection Dropdown with quick add */}
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-            <FormControl fullWidth size="small" error={formik.touched.partyId && Boolean(formik.errors.partyId)}>
-              <InputLabel id="partyId-label">Select Party *</InputLabel>
-              <Select
-                labelId="partyId-label"
-                id="partyId"
-                name="partyId"
-                value={formik.values.partyId}
-                onChange={(e) => handlePartyChange(e.target.value)}
-                onBlur={formik.handleBlur}
-                label="Select Party *"
-                disabled={Boolean(selectedPayment)} // Cannot edit party once created
-              >
-                <MenuItem value="">
-                  <em>None</em>
-                </MenuItem>
-                {parties.map((p) => (
-                  <MenuItem key={p._id} value={p._id}>
-                    {p.partyName}
-                  </MenuItem>
-                ))}
-              </Select>
-              {formik.touched.partyId && formik.errors.partyId && (
-                <FormHelperText>{formik.errors.partyId}</FormHelperText>
-              )}
+            <Box sx={{ flexGrow: 1 }}>
+              <Autocomplete
+                fullWidth
+                size="small"
+                options={parties}
+                getOptionLabel={(option) => option.partyName || ''}
+                value={parties.find((p) => p._id === formik.values.partyId) || null}
+                onChange={(_event, newValue) => {
+                  handlePartyChange(newValue ? newValue._id || '' : '');
+                }}
+                disabled={Boolean(selectedPayment)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Select Party *"
+                    error={formik.touched.partyId && Boolean(formik.errors.partyId)}
+                    helperText={formik.touched.partyId && formik.errors.partyId}
+                    onBlur={formik.handleBlur}
+                    name="partyId"
+                  />
+                )}
+              />
               {formik.values.partyId && (
                 <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 0.5, fontWeight: 600 }}>
                   Current Outstanding Pending Balance: {formatCurrency(selectedPartyPending)}
                 </Typography>
               )}
-            </FormControl>
+            </Box>
             {!selectedPayment && (
               <Button
                 variant="outlined"

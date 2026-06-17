@@ -208,6 +208,20 @@ export default function PartyMaster() {
         </Box>
       ),
     },
+    {
+      id: 'totalDueAmount',
+      label: 'Pending Amount',
+      minWidth: 180,
+      align: 'center' as const,
+      format: (val: number) => {
+        const hasPending = (val || 0) > 0;
+        return (
+          <span style={{ color: hasPending ? '#d93025' : '#188038', fontWeight: hasPending ? 700 : 500 }}>
+            {formatCurrency(val || 0)}
+          </span>
+        );
+      },
+    },
     { id: 'remark', label: 'Remark', minWidth: 120 },
     {
       id: 'actions',
