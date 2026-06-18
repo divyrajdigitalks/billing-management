@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Typography,
@@ -76,11 +76,7 @@ export default function PartyMaster() {
   const [vehicleInput, setVehicleInput] = useState('');
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadParties();
-  }, [currentPage, rowsPerPage, search, status]);
-
-  const loadParties = () => {
+  const loadParties = useCallback(() => {
     dispatch(fetchParties({
       search,
       page: currentPage + 1,
@@ -89,7 +85,11 @@ export default function PartyMaster() {
       order: 'asc',
       status
     }));
-  };
+  }, [search, currentPage, rowsPerPage, status, dispatch]);
+
+  useEffect(() => {
+    loadParties();
+  }, [loadParties]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSearch(e.target.value);

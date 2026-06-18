@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Typography,
@@ -113,11 +113,7 @@ export default function BillEntry() {
     dispatch(fetchParties({ limit: 1000 }));
   }, [dispatch]);
 
-  useEffect(() => {
-    loadBills();
-  }, [currentPage, rowsPerPage, search, startDate, endDate, status, dispatch]);
-
-  const loadBills = () => {
+  const loadBills = useCallback(() => {
     dispatch(fetchBills({
       search,
       page: currentPage + 1,
@@ -126,7 +122,11 @@ export default function BillEntry() {
       endDate,
       status,
     }));
-  };
+  }, [search, currentPage, rowsPerPage, startDate, endDate, status, dispatch]);
+
+  useEffect(() => {
+    loadBills();
+  }, [loadBills]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSearch(e.target.value);
