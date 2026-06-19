@@ -29,6 +29,8 @@ export const ThemeInput: React.FC<ThemeInputProps> = ({ name, formik, ...props }
         const digitsOnly = value.slice(3).replace(/\D/g, '').slice(0, 10);
         value = '+91' + digitsOnly;
       }
+    } else if (name === 'billNo') {
+      value = value.toUpperCase();
     }
 
     formik.setFieldValue(name, value);

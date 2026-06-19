@@ -56,3 +56,9 @@ export const deleteBill = async (id: string) => {
   const response = await API.delete<{ message: string }>(`/bill/${id}`);
   return response.data;
 };
+
+export const getNextBillNo = async () => {
+  const response = await API.get<{ nextBillNo: string }>('/bill/next-bill-no');
+  return response.data;
+};
+
